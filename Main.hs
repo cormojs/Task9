@@ -37,7 +37,7 @@ main = do
   
   Thumbnails { thumbsView  = thView
              , thumbsModel = thModel } <- thumbnailsNew
-  Monad.mapM_ (populateStore thModel) =<< getArgs
+  Monad.mapM_ (populateStoreFromDir thModel) =<< getArgs
 
   notebook <- LNotebook.notebookNew
   notebook `LNotebook.notebookAppendPage` thView $ "thumbs"
@@ -51,8 +51,8 @@ main = do
   
   GGeneral.mainGUI
 
-populateStore store dir = do
-  let isPict f = or $ map (FilePath.takeExtension f == ) [".jpg", ".jpeg", ".png"]
+populateStoreFromDir store dir = do
+  let isPict f = FilePath.takeExtension f `elem` [".jpg", ".jpeg", ".png"]
   files <-
     Monad.filterM Dir.doesFileExist
     =<< (map (dir</>) <$> Dir.getDirectoryContents dir)
@@ -76,7 +76,7 @@ thumbnailsNew = do
   scrolled <- SScrolled.scrolledWindowNew Nothing Nothing
   scrolled `set` [ AContainer.containerChild := imgView ]
 
-  return $ Thumbnails { thumbsModel = imgStore, thumbsView = scrolled }
+  return Thumbnails { thumbsModel = imgStore, thumbsView = scrolled }
   where
     -- store(model)を作成
     setupStore :: IO (MV.ListStore MyImage)
@@ -90,5 +90,5 @@ thumbnailsNew = do
     compareRow store acc iter1 iter2 = do
       v1 <- MV.treeModelGetRow store iter1
       v2 <- MV.treeModelGetRow store iter2
-      return $ (acc v1) `compare` (acc v2)
+      return $ acc v1 `compare` acc v2
 
