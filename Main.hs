@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 module Main where
 
 
@@ -8,11 +7,12 @@ import Thumbnails
 import PictView
 
 -- Gtk
-import Graphics.UI.Gtk (AttrOp((:=)), set, on, after)
+import Graphics.UI.Gtk (AttrOp((:=), (:=>)), set, on, after)
 
 import qualified Graphics.UI.Gtk.Abstract.Container as AContainer
 import qualified Graphics.UI.Gtk.Abstract.Widget    as AWidget
 import qualified Graphics.UI.Gtk.Display.Image      as DImage
+import qualified Graphics.UI.Gtk.Display.Label      as DLabel
 import qualified Graphics.UI.Gtk.Gdk.EventM         as GEventM
 import qualified Graphics.UI.Gtk.Gdk.Keys           as GKeys
 import qualified Graphics.UI.Gtk.General.General    as GGeneral
@@ -41,22 +41,62 @@ import Data.List  (elemIndex)
 main :: IO ()
 main = do
   GGeneral.initGUI
-  notebook <- LNotebook.notebookNew
+
+  notebook <- mainNoteBookNew
+      
 
   thumbs <- thumbnailsNew
   notebook `addThumbnailsTab` thumbs
   
   window <- WWindow.windowNew
+
+  notebook `on` LNotebook.pageRemoved $ \_ _ -> do
+    numPages <- LNotebook.notebookGetNPages notebook
+    Monad.when (numPages == 0) $ do
+      putStrLn "No pages in window, quiting..."
+      AWidget.widgetDestroy window
+      GGeneral.mainQuit
+      
   window `set` [ WWindow.windowDefaultWidth  := 850
                , WWindow.windowDefaultHeight := 600
                , AContainer.containerChild   := notebook ]
-  window `on` AWidget.deleteEvent $ Trans.liftIO GGeneral.mainQuit >> return False
+  window `on` AWidget.destroyEvent $ Trans.liftIO GGeneral.mainQuit >> return False
+  window `on` AWidget.keyPressEvent $ GEventM.tryEvent $ do
+    "F" <- GEventM.eventKeyName
+    Trans.liftIO $ WWindow.windowFullscreen window
+      
+  
   AWidget.widgetShowAll window
   
   Conc.forkOS $
     Monad.mapM_ (populateStoreFromFileOrDir (thumbsModel thumbs)) =<< getArgs
 
   GGeneral.mainGUI
+
+mainNoteBookNew = do
+  notebook <- LNotebook.notebookNew
+  notebook `on` AWidget.keyPressEvent $ do
+    modifiers <- GEventM.eventModifier
+    key       <- GEventM.eventKeyName
+    Trans.liftIO $ case (modifiers, key) of
+      ([             ], "Tab") -> LNotebook.notebookNextPage notebook
+      ([GEventM.Shift], "Tab") -> LNotebook.notebookPrevPage notebook
+      _ -> return ()
+    return False
+  notebook `on` LNotebook.pageAdded $ \widget index -> do
+    Just label <- LNotebook.notebookGetTabLabelText notebook widget
+    newLabel <- MEventBox.eventBoxNew
+    newLabel `set` [ AContainer.containerChild :=> DLabel.labelNew (Just label)]
+    LNotebook.notebookSetTabLabel notebook widget newLabel
+    AWidget.widgetShowAll newLabel
+    newLabel `on` AWidget.buttonPressEvent $ GEventM.tryEvent $ do
+      GEventM.DoubleClick <- GEventM.eventClick
+      Trans.liftIO $ do
+        putStrLn "closing tab..."
+        GGeneral.postGUIAsync $ closeTab notebook widget
+    return ()
+  return notebook
+
 
 
 addThumbnailsTab notebook

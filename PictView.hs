@@ -1,6 +1,5 @@
 module PictView where
 
-
 -- Gtk
 import Graphics.UI.Gtk (AttrOp((:=)), get, set, on, after)
 
@@ -31,40 +30,39 @@ type PictView = SScrolled.ScrolledWindow
 
 pictViewNewWithModel store index close = do
   pictView <- SScrolled.scrolledWindowNew Nothing Nothing
-  
+  adj      <- MAdjustment.adjustmentNew 0 0 0 0 0 0 
+  viewport <- MViewport.viewportNew adj adj
+  pictView `set` [ AContainer.containerChild := viewport ]
+
   indexObserver <- ObserverSync.createSub 0
   indexObserver `Observer.addObserver` \index -> do
-    (filename, _) <- MV.listStoreGetValue store index
-    image <- DImage.imageNewFromFile filename
-    adj   <- MAdjustment.adjustmentNew 0 0 0 0 0 0 
-    viewport <- MViewport.viewportNew adj adj
-    GGeneral.postGUIAsync $ do
-      viewport `set` [ AContainer.containerChild := image ]
-      AContainer.containerForall pictView $ \w ->
-        AContainer.containerRemove pictView w
-      pictView `set` [ AContainer.containerChild := viewport ]
-      AWidget.widgetShowAll pictView
+    size <- MV.listStoreGetSize store
+    if index /= (index `mod` size)
+      then indexObserver `Observer.setValue` (index`mod`size)
+      else pictViewMovePict index store viewport
   indexObserver `Observer.setValue` index
 
   pictViewSetupMouseEvent pictView close
   pictViewSetupKeyEvent pictView store indexObserver close
   return pictView
 
-pictViewNewWithViewport :: AWidget.WidgetClass widget =>
-                           widget -> IO PictView
-pictViewNewWithViewport widget = do
-  scrolled <- SScrolled.scrolledWindowNew Nothing Nothing
-  SScrolled.scrolledWindowAddWithViewport scrolled widget
-  return scrolled
+pictViewMovePict index store viewport = do
+  (filename, _) <- MV.listStoreGetValue store index
+  image <- DImage.imageNewFromFile filename
+  GGeneral.postGUIAsync $ do
+    AContainer.containerForall viewport $ \w ->
+      AContainer.containerRemove viewport w
+    viewport `set` [ AContainer.containerChild := image ]
+    AWidget.widgetShowAll viewport
 
 
 pictViewSetupMouseEvent scrolled close = do
   scrolled `on` AWidget.buttonPressEvent $ do
     button <- GEventM.eventButton
-    Trans.liftIO $ print button
     click <- GEventM.eventClick
-    Monad.when (click == GEventM.DoubleClick) $ do
-      Trans.liftIO $ GGeneral.postGUIAsync $ close scrolled
+    Trans.liftIO $ case click of
+      GEventM.DoubleClick -> GGeneral.postGUIAsync $ close scrolled
+      _ -> return ()
     return False
 
 pictViewSetupKeyEvent scrolled store sbj close = do
@@ -76,6 +74,4 @@ pictViewSetupKeyEvent scrolled store sbj close = do
       "period" -> GGeneral.postGUIAsync $ close scrolled
       _   -> putStrLn $ "Not assigned: " ++ keyname
     return False
-
-  return scrolled
 
