@@ -3,7 +3,7 @@
 
 name:                Task9
 version:             0.1.0.0
-synopsis:            An Image Viewer
+synopsis:            A Gtk Image Viewer written in Haskell
 -- description:         
 homepage:            https://twitter.com/cormojs
 license:             MIT
