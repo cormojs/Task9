@@ -1,5 +1,9 @@
 module PictView where
 
+-- Internal
+import Types
+import ImageStore
+
 -- Gtk
 import Graphics.UI.Gtk (AttrOp((:=)), get, set, on, after)
 
@@ -28,6 +32,8 @@ import qualified Control.Observer.Synchronous as ObserverSync
 type PictView = SScrolled.ScrolledWindow
 
 
+pictViewNewWithModel :: MV.ListStore MyImage -> Int -> (PictView -> IO ())
+                        -> IO PictView
 pictViewNewWithModel store index close = do
   pictView <- SScrolled.scrolledWindowNew Nothing Nothing
   adj      <- MAdjustment.adjustmentNew 0 0 0 0 0 0 
@@ -47,8 +53,7 @@ pictViewNewWithModel store index close = do
   return pictView
 
 pictViewMovePict index store viewport = do
-  (filename, _) <- MV.listStoreGetValue store index
-  image <- DImage.imageNewFromFile filename
+  image <- imageNewFromStore store index
   GGeneral.postGUIAsync $ do
     AContainer.containerForall viewport $ \w ->
       AContainer.containerRemove viewport w

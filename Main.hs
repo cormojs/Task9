@@ -1,10 +1,10 @@
 module Main where
 
-
 -- Internal
 import Types
 import Thumbnails
 import PictView
+import ImageStore
 
 -- Gtk
 import Graphics.UI.Gtk (AttrOp((:=), (:=>)), set, on, after)
@@ -29,7 +29,7 @@ import Control.Applicative ((<$>))
 import qualified Control.Monad        as Monad
 import qualified Control.Monad.Trans  as Trans
 import qualified Control.Monad.Reader as Reader
-import qualified Control.Observer as Observer
+import qualified Control.Observer     as Observer
 import qualified Control.Observer.Synchronous as ObserverSync
 import qualified Control.Concurrent   as Conc
 
@@ -43,7 +43,6 @@ main = do
   GGeneral.initGUI
 
   notebook <- mainNoteBookNew
-      
 
   thumbs <- thumbnailsNew
   notebook `addThumbnailsTab` thumbs
@@ -56,11 +55,13 @@ main = do
       putStrLn "No pages in window, quiting..."
       AWidget.widgetDestroy window
       GGeneral.mainQuit
-      
+
   window `set` [ WWindow.windowDefaultWidth  := 850
                , WWindow.windowDefaultHeight := 600
                , AContainer.containerChild   := notebook ]
-  window `on` AWidget.destroyEvent $ Trans.liftIO GGeneral.mainQuit >> return False
+  window `on` AWidget.destroyEvent $ Trans.liftIO $ do
+    GGeneral.mainQuit
+    return False
   window `on` AWidget.keyPressEvent $ GEventM.tryEvent $ do
     "F" <- GEventM.eventKeyName
     Trans.liftIO $ WWindow.windowFullscreen window
@@ -98,7 +99,6 @@ mainNoteBookNew = do
   return notebook
 
 
-
 addThumbnailsTab notebook
   (Thumbnails { thumbsView     = thView
               , thumbsObserver = thSbj
@@ -107,7 +107,6 @@ addThumbnailsTab notebook
   thSbj `Observer.addObserver` \index ->
     GGeneral.postGUIAsync $ do
       pict <- pictViewNewWithModel thModel index $ closeTab notebook
-      -- pict' <- pictViewNew filename $ closeTab notebook
       notebook `LNotebook.notebookAppendPage` pict $ "pict"
       AWidget.widgetShowAll pict
       LNotebook.notebookSetCurrentPage notebook

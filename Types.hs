@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE Rank2Types #-}
 module Types where
 
 
@@ -11,7 +11,10 @@ import qualified Graphics.UI.Gtk.Scrolling.ScrolledWindow as SScrolled
 
 import qualified Control.Observer.Synchronous as ObserverSync
 
-type MyImage = (IO.FilePath, GPixbuf.Pixbuf)
+data MyImage = MyImage { imageFilename :: String
+                       , imageThumb    :: GPixbuf.Pixbuf
+                       , imagePaginate :: Maybe (IO ())
+                       }
 
 data Thumbnails =
   Thumbnails

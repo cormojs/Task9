@@ -2,6 +2,7 @@ module Thumbnails where
 
 -- Internal
 import Types
+import ImageStore
 
 -- Gtk
 import Graphics.UI.Gtk (AttrOp((:=)), set, on)
@@ -30,10 +31,10 @@ import Data.List (sort)
 
 thumbnailsNew :: IO Thumbnails
 thumbnailsNew = do
-  imgStore <- thumbnailsStoreNew
+  imgStore <- imageStoreNew
 
   imgStoreSorted <- MV.treeModelSortNewWithModel imgStore
-  MV.treeSortableSetSortFunc imgStoreSorted 1 (compareRow imgStore fst)
+  MV.treeSortableSetSortFunc imgStoreSorted 1 (compareRow imgStore imageFilename)
   MV.treeSortableSetSortColumnId imgStoreSorted 1 GEnums.SortDescending
 
   imgView <- MV.iconViewNewWithModel imgStore
@@ -57,31 +58,3 @@ thumbnailsNew = do
       v1 <- MV.treeModelGetRow store iter1
       v2 <- MV.treeModelGetRow store iter2
       return $ acc v1 `compare` acc v2
-
-
-thumbnailsStoreNew :: IO (MV.ListStore MyImage)
-thumbnailsStoreNew = do
-  store <- MV.listStoreNew ([] :: [MyImage])
-  MV.customStoreSetColumn store (MV.makeColumnIdString 0)
-    (take 20 . FilePath.takeFileName . fst)
-  MV.customStoreSetColumn store (MV.makeColumnIdPixbuf 1) snd
-  return store
-
-populateStoreFromFileOrDir store path = do
-  isDir  <- Dir.doesDirectoryExist path
-  isFile <- Dir.doesFileExist path
-  Monad.when isDir  $ populateStoreFromDir  store path
-  Monad.when isFile $ populateStoreFromFile store path
-
-populateStoreFromDir :: MV.ListStore MyImage -> String -> IO ()
-populateStoreFromDir store dir = do
-  let isPict f = FilePath.takeExtension f `elem` [".jpg", ".jpeg", ".png"]
-  files <- Monad.filterM Dir.doesFileExist
-           =<< (map (dir</>) <$> Dir.getDirectoryContents dir)
-  Monad.mapM_ (populateStoreFromFile store) (sort $ filter isPict files)
-
-populateStoreFromFile store filename = do
-  pixbuf <- GPixbuf.pixbufNewFromFileAtSize filename 240 300
-  GGeneral.postGUIAsync $ do
-    store `MV.listStoreAppend` (filename, pixbuf)
-    return ()
