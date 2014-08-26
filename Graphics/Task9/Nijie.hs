@@ -24,6 +24,8 @@ import qualified Graphics.UI.Gtk.Layout.Notebook    as LNotebook
 import qualified Graphics.UI.Gtk.Layout.HButtonBox  as LHButtonBox
 import qualified Graphics.UI.Gtk.ModelView          as MV
 import qualified Graphics.UI.Gtk.Windows.Window     as WWindow
+import qualified Graphics.UI.Gtk.Windows.MessageDialog as WMessageDialog
+import qualified Graphics.UI.Gtk.Windows.Dialog     as WDialog
 
 import qualified System.Glib.GError as GError
 
@@ -108,13 +110,26 @@ nijieOpenBrowser (_, store, index) = withImage store index $ \link -> do
   where url (NjeLink { njeId = id }) = illust ++ Char8.unpack id
         illust = "http://nijie.info/view.php?id="
 
-nijieBookmarkAdd (_, store, index) = withImage store index $ \link -> do
-  njeBookmarkAdd link
-  putStrLn "illust fav'ed"
+nijieBookmarkAdd confirm (_, store, index) = withImage store index $ \link -> do
+  if confirm
+     then withConfirmDialogDo "confirm: fav?" $ njeBookmarkAdd link
+     else njeBookmarkAdd link >> putStrLn "illust fav'ed"
 
-nijieNuitaAdd (_, store, index) = withImage store index $ \link -> do
-  njeNuitaAdd link
-  putStrLn "illust nui'ed"
+nijieNuitaAdd confirm (_, store, index) = withImage store index $ \link -> do
+  if confirm
+    then withConfirmDialogDo "confirm: nuita?" $ njeNuitaAdd link
+    else njeNuitaAdd link >> putStrLn "illust nui'ed"
+
+
+withConfirmDialogDo str action = do
+  dialog <- WMessageDialog.messageDialogNew
+              Nothing [WMessageDialog.DialogModal]
+              WMessageDialog.MessageQuestion WMessageDialog.ButtonsOkCancel
+              str
+  response <- WDialog.dialogRun dialog
+  print response
+  Monad.when (response == WDialog.ResponseOk) $ action
+  AWidget.widgetDestroy dialog
 
 nijieMyFavNew config (self, _, _) = do
   notebook <- notebookFromChild self

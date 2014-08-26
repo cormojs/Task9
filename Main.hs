@@ -132,8 +132,8 @@ keyConfig =
                  , ("h", pictHScroll (subtract 20.0))
                  , ("comma", pictToggleResizeState) ]
             , nijieKeyMap =
-                 [ ("b", nijieBookmarkAdd)
-                 , ("m", nijieNuitaAdd)
+                 [ ("b", nijieBookmarkAdd True)
+                 , ("m", nijieNuitaAdd True)
                  , ("y", nijieMyFavNew keyConfig)
                  , ("u", nijieUserNew  keyConfig)
                  , ("i", nijieUserFavNew keyConfig)
