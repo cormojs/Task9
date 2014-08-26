@@ -2,7 +2,7 @@
 --  see http://haskell.org/cabal/users-guide/
 
 name:                Task9
-version:             0.1.0.0
+version:             0.2.0.1
 synopsis:            A Gtk Image Viewer written in Haskell
 -- description:         
 homepage:            https://twitter.com/cormojs
@@ -20,8 +20,9 @@ executable Task9
   main-is:             Main.hs
   -- other-modules:       
   -- other-extensions:    
-  build-depends:       base >=4.6 && <4.7, mtl, filepath, directory
-                     , gtk < 0.13, simple-observer
+  build-depends:       base >=4.6 && <4.7, mtl, filepath, directory, Nijie
+                     , gtk < 0.13, simple-observer, text, bytestring, utf8-string
+                     , glib, process
   -- hs-source-dirs:      
   default-language:    Haskell2010
   ghc-options: -threaded
