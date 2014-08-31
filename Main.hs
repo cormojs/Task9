@@ -50,10 +50,11 @@ import qualified Data.ByteString       as ByteString
 import qualified Data.ByteString.Char8 as Char8
 import qualified Data.ByteString.UTF8  as BSUTF8
 
-
+-- network
+import qualified Network.Socket as Socket
 
 main :: IO ()
-main = do
+main = Socket.withSocketsDo $ do
   GGeneral.initGUI
 
   (mode:args) <- getArgs

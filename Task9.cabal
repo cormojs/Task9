@@ -22,7 +22,7 @@ executable Task9
   -- other-extensions:    
   build-depends:       base >=4.6 && <4.7, mtl, filepath, directory, Nijie
                      , gtk < 0.14, simple-observer, text, bytestring, utf8-string
-                     , glib, process
+                     , glib, process, network
   -- hs-source-dirs:      
   default-language:    Haskell2010
   ghc-options: -threaded
