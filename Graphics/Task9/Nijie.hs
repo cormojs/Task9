@@ -24,7 +24,7 @@ import qualified Graphics.UI.Gtk.Layout.Notebook    as LNotebook
 import qualified Graphics.UI.Gtk.Layout.HButtonBox  as LHButtonBox
 import qualified Graphics.UI.Gtk.ModelView          as MV
 import qualified Graphics.UI.Gtk.Windows.Window     as WWindow
-import qualified Graphics.UI.Gtk.Windows.MessageDialog as WMessageDialog
+import qualified Graphics.UI.Gtk.Windows.MessageDialog as WMsgDialog
 import qualified Graphics.UI.Gtk.Windows.Dialog     as WDialog
 
 import qualified System.Glib.GError as GError
@@ -122,9 +122,9 @@ nijieNuitaAdd confirm (_, store, index) = withImage store index $ \link -> do
 
 
 withConfirmDialogDo str action = do
-  dialog <- WMessageDialog.messageDialogNew
-              Nothing [WMessageDialog.DialogModal]
-              WMessageDialog.MessageQuestion WMessageDialog.ButtonsOkCancel
+  dialog <- WMsgDialog.messageDialogNew
+              Nothing [WMsgDialog.DialogModal]
+              WMsgDialog.MessageQuestion WMsgDialog.ButtonsOkCancel
               str
   response <- WDialog.dialogRun dialog
   print response
