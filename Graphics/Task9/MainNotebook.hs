@@ -26,6 +26,7 @@ import qualified Graphics.UI.Gtk.Windows.Window     as WWindow
 -- Data
 import Data.Maybe (catMaybes, fromJust)
 import Data.List  (elemIndex)
+import qualified Data.Text as Text
 
 -- Control
 import Control.Applicative ((<$>))
@@ -61,7 +62,7 @@ mainNotebookNew = do
         let Just action = lookup keyname keymap
         action notebook
     notebook `on` LNotebook.pageAdded $ \widget index -> do
-      Just label <- LNotebook.notebookGetTabLabelText notebook widget
+      Just label <- LNotebook.notebookGetTabLabelText notebook widget :: IO (Maybe String)
       newLabel <- MEventBox.eventBoxNew
       newLabel `set` [ AContainer.containerChild
                        :=> DLabel.labelNew (Just label)]
@@ -69,10 +70,8 @@ mainNotebookNew = do
       AWidget.widgetShowAll newLabel
       widget `on` AWidget.keyPressEvent $ do
         keyname <- GEventM.eventKeyName
-        Trans.liftIO $ case keyname of
-          "period" ->
-            GGeneral.postGUIAsync $ notebookCloseChild notebook widget
-          _ -> return ()
+        Monad.when (keyname == (Text.pack "period")) $ Trans.liftIO $ do
+          GGeneral.postGUIAsync $ notebookCloseChild notebook widget
         return False
       return ()
     return notebook

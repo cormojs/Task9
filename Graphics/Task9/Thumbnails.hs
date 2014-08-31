@@ -47,7 +47,9 @@ thumbnailsNew = do
   
     imgView <- MV.iconViewNewWithModel imgStore
     imgView `set` [ MV.iconViewPixbufColumn := MV.makeColumnIdPixbuf 1
-                  , MV.iconViewTextColumn   := MV.makeColumnIdString 0 ]
+                  , MV.iconViewTextColumn   :=
+                    (MV.makeColumnIdString 0 :: MV.ColumnId row String)
+                  ]
     AObject.castToObject imgView `on` AObject.objectDestroy $ do
       MV.listStoreClear imgStore
   

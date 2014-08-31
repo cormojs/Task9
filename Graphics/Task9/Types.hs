@@ -24,6 +24,9 @@ import qualified System.Directory as Dir
 import qualified System.FilePath  as FilePath
 import System.FilePath     ((</>))
 
+-- text
+import Data.Text (Text)
+
 -- Nijie
 import Web.Nijie
 import Web.Nijie.Types
@@ -66,7 +69,7 @@ data KeyMapSet =
                                 Int) ]
   }
 
-type KeyMap a = (String, a -> IO ())
+type KeyMap a = (Text, a -> IO ())
 
 
 -- Image Resizer

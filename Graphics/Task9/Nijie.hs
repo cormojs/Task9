@@ -121,6 +121,7 @@ nijieNuitaAdd confirm (_, store, index) = withImage store index $ \link -> do
     else njeNuitaAdd link >> putStrLn "illust nui'ed"
 
 
+withConfirmDialogDo :: String -> IO () -> IO ()
 withConfirmDialogDo str action = do
   dialog <- WMsgDialog.messageDialogNew
               Nothing [WMsgDialog.DialogModal]
