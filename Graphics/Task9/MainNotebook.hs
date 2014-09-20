@@ -62,10 +62,10 @@ mainNotebookNew = do
         let Just action = lookup keyname keymap
         action notebook
     notebook `on` LNotebook.pageAdded $ \widget index -> do
-      Just label <- LNotebook.notebookGetTabLabelText notebook widget :: IO (Maybe String)
+      Just label <- LNotebook.notebookGetTabLabelText notebook widget
       newLabel <- MEventBox.eventBoxNew
       newLabel `set` [ AContainer.containerChild
-                       :=> DLabel.labelNew (Just label)]
+                       :=> DLabel.labelNew (Just label :: Maybe String)]
       LNotebook.notebookSetTabLabel notebook widget newLabel
       AWidget.widgetShowAll newLabel
       widget `on` AWidget.keyPressEvent $ do
