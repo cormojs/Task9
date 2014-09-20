@@ -9,11 +9,12 @@ import Graphics.Task9.Utils
 import Graphics.Task9.Config
 
 -- Gtk
-import Graphics.UI.Gtk (AttrOp((:=)), get, set, on, after)
+import Graphics.UI.Gtk (AttrOp((:=), (:=>)), get, set, on, after)
 
 import qualified Graphics.UI.Gtk.Abstract.Container as AContainer
 import qualified Graphics.UI.Gtk.Abstract.Object    as AObject
 import qualified Graphics.UI.Gtk.Abstract.Widget    as AWidget
+import qualified Graphics.UI.Gtk.Abstract.Paned     as APaned
 import qualified Graphics.UI.Gtk.Buttons.Button     as BButton
 import qualified Graphics.UI.Gtk.Display.Image      as DImage
 import qualified Graphics.UI.Gtk.Gdk.EventM         as GEventM
@@ -22,7 +23,11 @@ import qualified Graphics.UI.Gtk.Gdk.Pixbuf         as GPixbuf
 import qualified Graphics.UI.Gtk.General.General    as GGeneral
 import qualified Graphics.UI.Gtk.Layout.Notebook    as LNotebook
 import qualified Graphics.UI.Gtk.Layout.HButtonBox  as LHButtonBox
+import qualified Graphics.UI.Gtk.Layout.Table       as LTable
+import qualified Graphics.UI.Gtk.Layout.VPaned      as LVPaned
 import qualified Graphics.UI.Gtk.ModelView          as MV
+import qualified Graphics.UI.Gtk.Multiline.TextView as MTextView
+import qualified Graphics.UI.Gtk.Multiline.TextBuffer as MTextBuffer
 import qualified Graphics.UI.Gtk.Windows.Window     as WWindow
 import qualified Graphics.UI.Gtk.Windows.MessageDialog as WMsgDialog
 import qualified Graphics.UI.Gtk.Windows.Dialog     as WDialog
@@ -182,34 +187,62 @@ nijieTagSearchPopupNew config triple@(self, store, index) =
   withImage store index $ \link@(NjeLink { njeId = id }) -> do
     doc <- njeDoc $ NjeView id
 
-    (window, box) <- windowButtonBoxNew
-    Monad.mapM_ (addTagButton window box) $ njeTagsFromDoc doc
+    (window, box) <- windowButtonBoxNewWithDesc $ njeDescriptionFromDoc doc
+    Monad.mapM_ (addTagButton window box)
+      $ zip [0..] $ njeTagsFromDoc doc
 
     AWidget.widgetShowAll window
     where
-      addTagButton window box tagName = do
+      addTagButton window tbl (nth, tagName) = do
         button <- BButton.buttonNewWithLabel $ BSUTF8.toString tagName
-        AContainer.containerAdd box button
+        let x = nth `mod` 5
+            y = nth `div` 5
+        LTable.tableAttachDefaults tbl button x (x+1) y (y+1)
+
         button `on` BButton.buttonActivated $ do
           openSearch tagName
           AWidget.widgetDestroy window
       openSearch tag = do
         thumbsNewWithApiOf config triple "[Search] " (const tag)
           (\_ -> NjeSearch tag NjeSortNui 1)
-      windowButtonBoxNew = do
+      windowButtonBoxNewWithDesc desc = do
         window <- WWindow.windowNew
+        table <- LTable.tableNew 1 1 False
 
-        box <- LHButtonBox.hButtonBoxNew
-        window `set` [ AContainer.containerChild := box ]
+        table  `set` [ LTable.tableRowSpacing    := 5
+                     , LTable.tableColumnSpacing := 5 ]
+        descView <- textView desc
+        window `set` [ AContainer.containerChild :=> do
+                         paned <- LVPaned.vPanedNew
+                         APaned.panedPack1 paned descView True  False
+                         APaned.panedPack2 paned table    False False
+                         return paned
+                     ]
+        window `on` AWidget.keyPressEvent $ GEventM.tryEvent $ do
+          "period" <- GEventM.eventKeyName
+          Trans.liftIO $ AWidget.widgetDestroy window
 
-        return (window, box)
+        return (window, table)
+      textView str = do
+        view <- MTextView.textViewNew
+        buf  <- view `get` MTextView.textViewBuffer
+
+        buf  `set` [ MTextBuffer.textBufferText := str ]
+        view `set` [ MTextView.textViewWrapMode := MTextView.WrapWord ]
+        return view
+
+nijieLogin relogin = do
+  isLoggedIn <- Dir.doesFileExist "./session.json"
+  Monad.when (relogin || not isLoggedIn) $ do
+    NjeLogin email password <- loadJSONFromFile "./login.json"
+    njeLoginSave "./session.json" email password
 
 
 populateStoreFromNijieThumbs :: NjeAPI ->
                                 MV.ListStore NijiePage ->
                                 IO Int
 populateStoreFromNijieThumbs api store = do
-  initForLogin
+  nijieLogin False
   links <- Exception.catch
            (njeLinksFromThumbs api <$> njeDoc api)
            (\e -> do
@@ -227,11 +260,6 @@ populateStoreFromNijieThumbs api store = do
   putStrLn $ "added " ++ show (length links) ++ "pics"
   return $ length links
   where
-    initForLogin = do
-      isLogin <- Dir.doesFileExist "./session.json"
-      Monad.unless isLogin $ do
-        NjeLogin email password <- loadJSONFromFile "./login.json"
-        njeLoginSave "./session.json" email password
     compositeKindIcon NjeSingle _ = return ()
     compositeKindIcon kind pixbuf = do
       let iconName = if kind == NjeManga

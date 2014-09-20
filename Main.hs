@@ -140,7 +140,8 @@ keyConfig =
                  , ("i", nijieUserFavNew keyConfig)
                  , ("o", nijieUserNuiNew keyConfig)
                  , ("O", nijieOpenBrowser)
-                 , ("t", nijieTagSearchPopupNew keyConfig)]
+                 , ("t", nijieTagSearchPopupNew keyConfig)
+                 , ("G", const $ nijieLogin True)]
             , fileViewKeyMap = []
             }
 
