@@ -20,7 +20,7 @@ executable Task9
   main-is:             Main.hs
   -- other-modules:       
   -- other-extensions:    
-  build-depends:       base >=4.6 && <4.7, mtl, filepath, directory, Nijie
+  build-depends:       base >=4.6 && <4.8, mtl, filepath, directory, Nijie
                      , gtk < 0.14, simple-observer, text, bytestring, utf8-string
                      , glib, process, network
   -- hs-source-dirs:      
