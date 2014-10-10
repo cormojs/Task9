@@ -243,11 +243,7 @@ populateStoreFromNijieThumbs :: NjeAPI ->
                                 IO Int
 populateStoreFromNijieThumbs api store = do
   nijieLogin False
-  links <- Exception.catch
-           (njeLinksFromThumbs api <$> njeDoc api)
-           (\e -> do
-               print (e :: SomeException)
-               return [])
+  links <- njeLinksFromThumbs api <$> njeDoc api
   Monad.forM_ links $ \link@NjeLink { njeId = id, njeThumbUrl = url} -> do
     savedFilename <- njeSaveUrl ("./thumbs/" ++ Char8.unpack id) url
     pixbuf <- GPixbuf.pixbufNewFromFileAtSize savedFilename 200 120
