@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Main where
 
 -- Internal
@@ -41,6 +42,8 @@ import qualified Control.Monad.Reader as Reader
 import qualified Control.Observer     as Observer
 import qualified Control.Observer.Synchronous as ObserverSync
 import qualified Control.Concurrent   as Conc
+import Control.Exception (SomeException, PatternMatchFail)
+import qualified Control.Exception as Exception
 
 
 
@@ -90,9 +93,22 @@ modeRun notebook mode args = case mode of
             -> map (NjeSearch (BSUTF8.fromString w) NjeSortNui . read) ps
           _ -> error $ "invalid argument\n" ++ usage
     Conc.forkOS $ do
-      size <- sum <$> (Monad.forM apis $ \api ->
-                        populateStoreFromNijieThumbs api
-                        $ thumbsModel thumbs)
+      addeds <- Monad.forM apis $ \api ->
+        (populateStoreFromNijieThumbs api $ thumbsModel thumbs)
+        `Exception.catches`
+        [ Exception.Handler $ \(e :: PatternMatchFail) -> do
+             GGeneral.postGUIAsync
+               $ withConfirmDialogDo ("Pattern match fail: "++show e)
+                 $ return ()
+             return 0
+        , Exception.Handler $ \(e :: SomeException) -> do
+             GGeneral.postGUIAsync
+               $ withConfirmDialogDo ("Other error: "++show e)
+                 $ return ()
+             print e
+             return 0
+        ]
+      let size = sum addeds
       notebookSetChildTitle (thumbsView thumbs)
         $ head args ++ ": " ++ show size
   _ -> error $ "invalid argument\n" ++ usage
