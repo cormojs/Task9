@@ -31,6 +31,8 @@ import qualified Graphics.UI.Gtk.Multiline.TextBuffer as MTextBuffer
 import qualified Graphics.UI.Gtk.Windows.Window     as WWindow
 import qualified Graphics.UI.Gtk.Windows.MessageDialog as WMsgDialog
 import qualified Graphics.UI.Gtk.Windows.Dialog     as WDialog
+import qualified Graphics.UI.Gtk.Selectors.FileChooser       as FileC
+import qualified Graphics.UI.Gtk.Selectors.FileChooserDialog as FileCD
 
 import qualified System.Glib.GError as GError
 
@@ -48,6 +50,9 @@ import qualified Data.ByteString.UTF8  as BSUTF8
 
 -- text
 import qualified Data.Text.IO as TextIO
+
+-- filepath
+import System.FilePath (takeFileName)
 
 -- control
 import qualified Control.Monad as Monad
@@ -108,6 +113,27 @@ withImage store index action = do
 getLink (Link link _)       = Just link
 getLink (ImageURL link _ _) = Just link
 getLink _                   = Nothing
+
+nijieSaveIllustDialog (self, store, index) = do
+  let btns = [("Save"::String, WDialog.ResponseOk)]
+  d <- FileCD.fileChooserDialogNew Nothing Nothing FileC.FileChooserActionSave btns
+
+  link <- store `MV.listStoreGetValue` index
+  FileC.fileChooserSetCurrentName d =<< name link
+  AWidget.widgetShowAll d
+
+  d `on` WDialog.response $ \response -> do
+    Monad.when (response == WDialog.ResponseOk) $ do
+      Just fname <- FileC.fileChooserGetFilename d
+      save link fname
+      AWidget.widgetDestroy d
+  return ()
+  where name (ImageURL _ _ fimg) = return $ takeFileName $ imageFilename fimg
+        name (Link link _)       = takeFileName <$> njeSaveTopIllust "./nijie" link
+        save (ImageURL _ _ fimg) fname = Dir.copyFile (imageFilename fimg) fname
+        save (Link link _) fname = do
+          orig <- njeSaveTopIllust "./nijie" link
+          Dir.copyFile orig fname
 
 nijieOpenBrowser (_, store, index) = withImage store index $ \link -> do
   Process.rawSystem "open" [url link]

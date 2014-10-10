@@ -157,7 +157,9 @@ keyConfig =
                  , ("o", nijieUserNuiNew keyConfig)
                  , ("O", nijieOpenBrowser)
                  , ("t", nijieTagSearchPopupNew keyConfig)
-                 , ("G", const $ nijieLogin True)]
+                 , ("G", const $ nijieLogin True)
+                 , ("d", nijieSaveIllustDialog )
+                 ]
             , fileViewKeyMap = []
             }
 
