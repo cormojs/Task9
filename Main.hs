@@ -117,11 +117,6 @@ modeRun notebook mode args = case mode of
 usage :: String
 usage = "Usage:\n"
         ++ "\t Task9 file <File or directory>...\n"
-        ++ "\t Task9 nijie favs <page num>...\n"
-        ++ "\t Task9 nijie like <page num>...\n"
-        ++ "\t Task9 nijie user <user id>...\n"
-        ++ "\t Task9 nijie rank <now|day|week|month>...\n"
-        ++ "\t Task9 nijie search <word> <page num>...\n"
 
 keyConfig =
   KeyMapSet { windowKeyMap =
